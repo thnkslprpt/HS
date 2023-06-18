@@ -444,98 +444,106 @@ CFE_Status_t HS_TblInit(void)
     {
         CFE_EVS_SendEvent(HS_AMT_REG_ERR_EID, CFE_EVS_EventType_ERROR, "Error Registering AppMon Table,RC=0x%08X",
                           (unsigned int)Status);
-        return Status;
     }
 
-    /* Register The HS Events Monitor Table */
-    TableSize = HS_MAX_MONITORED_EVENTS * sizeof(HS_EMTEntry_t);
-    Status    = CFE_TBL_Register(&HS_AppData.EMTableHandle, HS_EMT_TABLENAME, TableSize, CFE_TBL_OPT_DEFAULT,
-                              HS_ValidateEMTable);
-
-    if (Status != CFE_SUCCESS)
+    if (Status == CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(HS_EMT_REG_ERR_EID, CFE_EVS_EventType_ERROR, "Error Registering EventMon Table,RC=0x%08X",
-                          (unsigned int)Status);
-        return Status;
-    }
+        /* Register The HS Events Monitor Table */
+        TableSize = HS_MAX_MONITORED_EVENTS * sizeof(HS_EMTEntry_t);
+        Status    = CFE_TBL_Register(&HS_AppData.EMTableHandle, HS_EMT_TABLENAME, TableSize, CFE_TBL_OPT_DEFAULT,
+                                  HS_ValidateEMTable);
 
-    /* Register The HS Message Actions Table */
-    TableSize = HS_MAX_MSG_ACT_TYPES * sizeof(HS_MATEntry_t);
-    Status    = CFE_TBL_Register(&HS_AppData.MATableHandle, HS_MAT_TABLENAME, TableSize, CFE_TBL_OPT_DEFAULT,
-                              HS_ValidateMATable);
-
-    if (Status != CFE_SUCCESS)
-    {
-        CFE_EVS_SendEvent(HS_MAT_REG_ERR_EID, CFE_EVS_EventType_ERROR, "Error Registering MsgActs Table,RC=0x%08X",
-                          (unsigned int)Status);
-        return Status;
-    }
-
-    /* Register The HS Execution Counters Table */
-    TableSize = HS_MAX_EXEC_CNT_SLOTS * sizeof(HS_XCTEntry_t);
-    Status    = CFE_TBL_Register(&HS_AppData.XCTableHandle, HS_XCT_TABLENAME, TableSize, CFE_TBL_OPT_DEFAULT,
-                              HS_ValidateXCTable);
-
-    if (Status != CFE_SUCCESS)
-    {
-        CFE_EVS_SendEvent(HS_XCT_REG_ERR_EID, CFE_EVS_EventType_ERROR, "Error Registering ExeCount Table,RC=0x%08X",
-                          (unsigned int)Status);
-        return Status;
-    }
-
-    /* Load the HS Execution Counters Table */
-    Status = CFE_TBL_Load(HS_AppData.XCTableHandle, CFE_TBL_SRC_FILE, (const void *)HS_XCT_FILENAME);
-    if (Status != CFE_SUCCESS)
-    {
-        CFE_EVS_SendEvent(HS_XCT_LD_ERR_EID, CFE_EVS_EventType_ERROR, "Error Loading ExeCount Table,RC=0x%08X",
-                          (unsigned int)Status);
-        HS_AppData.ExeCountState = HS_STATE_DISABLED;
-        for (TableIndex = 0; TableIndex < HS_MAX_EXEC_CNT_SLOTS; TableIndex++)
+        if (Status != CFE_SUCCESS)
         {
-            /* HS 8005.1 Report 0xFFFFFFFF for all entries */
-            HS_AppData.HkPacket.Payload.ExeCounts[TableIndex] = HS_INVALID_EXECOUNT;
+            CFE_EVS_SendEvent(HS_EMT_REG_ERR_EID, CFE_EVS_EventType_ERROR, "Error Registering EventMon Table,RC=0x%08X",
+                              (unsigned int)Status);
         }
     }
 
-    /* Load the HS Applications Monitor Table */
-    Status = CFE_TBL_Load(HS_AppData.AMTableHandle, CFE_TBL_SRC_FILE, (const void *)HS_AMT_FILENAME);
-    if (Status != CFE_SUCCESS)
+    if (Status == CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(HS_AMT_LD_ERR_EID, CFE_EVS_EventType_ERROR, "Error Loading AppMon Table,RC=0x%08X",
-                          (unsigned int)Status);
-        HS_AppData.CurrentAppMonState = HS_STATE_DISABLED;
-        CFE_EVS_SendEvent(HS_DISABLE_APPMON_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "Application Monitoring Disabled due to Table Load Failure");
-        HS_AppData.AppMonLoaded = HS_STATE_DISABLED;
+        /* Register The HS Message Actions Table */
+        TableSize = HS_MAX_MSG_ACT_TYPES * sizeof(HS_MATEntry_t);
+        Status    = CFE_TBL_Register(&HS_AppData.MATableHandle, HS_MAT_TABLENAME, TableSize, CFE_TBL_OPT_DEFAULT,
+                                  HS_ValidateMATable);
+
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_MAT_REG_ERR_EID, CFE_EVS_EventType_ERROR, "Error Registering MsgActs Table,RC=0x%08X",
+                              (unsigned int)Status);
+        }
     }
 
-    /* Load the HS Events Monitor Table */
-    Status = CFE_TBL_Load(HS_AppData.EMTableHandle, CFE_TBL_SRC_FILE, (const void *)HS_EMT_FILENAME);
-    if (Status != CFE_SUCCESS)
+    if (Status == CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(HS_EMT_LD_ERR_EID, CFE_EVS_EventType_ERROR, "Error Loading EventMon Table,RC=0x%08X",
-                          (unsigned int)Status);
-        HS_AppData.CurrentEventMonState = HS_STATE_DISABLED;
-        CFE_EVS_SendEvent(HS_DISABLE_EVENTMON_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "Event Monitoring Disabled due to Table Load Failure");
-        HS_AppData.EventMonLoaded = HS_STATE_DISABLED;
+        /* Register The HS Execution Counters Table */
+        TableSize = HS_MAX_EXEC_CNT_SLOTS * sizeof(HS_XCTEntry_t);
+        Status    = CFE_TBL_Register(&HS_AppData.XCTableHandle, HS_XCT_TABLENAME, TableSize, CFE_TBL_OPT_DEFAULT,
+                                  HS_ValidateXCTable);
+
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_XCT_REG_ERR_EID, CFE_EVS_EventType_ERROR, "Error Registering ExeCount Table,RC=0x%08X",
+                              (unsigned int)Status);
+        }
     }
 
-    /* Load the HS Message Actions Table */
-    Status = CFE_TBL_Load(HS_AppData.MATableHandle, CFE_TBL_SRC_FILE, (const void *)HS_MAT_FILENAME);
-    if (Status != CFE_SUCCESS)
+    if (Status == CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(HS_MAT_LD_ERR_EID, CFE_EVS_EventType_ERROR, "Error Loading MsgActs Table,RC=0x%08X",
-                          (unsigned int)Status);
-        HS_AppData.MsgActsState = HS_STATE_DISABLED;
+        /* Load the HS Execution Counters Table */
+        Status = CFE_TBL_Load(HS_AppData.XCTableHandle, CFE_TBL_SRC_FILE, (const void *)HS_XCT_FILENAME);
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_XCT_LD_ERR_EID, CFE_EVS_EventType_ERROR, "Error Loading ExeCount Table,RC=0x%08X",
+                              (unsigned int)Status);
+            HS_AppData.ExeCountState = HS_STATE_DISABLED;
+            for (TableIndex = 0; TableIndex < HS_MAX_EXEC_CNT_SLOTS; TableIndex++)
+            {
+                /* HS 8005.1 Report 0xFFFFFFFF for all entries */
+                HS_AppData.HkPacket.Payload.ExeCounts[TableIndex] = HS_INVALID_EXECOUNT;
+            }
+        }
+
+        /* Load the HS Applications Monitor Table */
+        Status = CFE_TBL_Load(HS_AppData.AMTableHandle, CFE_TBL_SRC_FILE, (const void *)HS_AMT_FILENAME);
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_AMT_LD_ERR_EID, CFE_EVS_EventType_ERROR, "Error Loading AppMon Table,RC=0x%08X",
+                              (unsigned int)Status);
+            HS_AppData.CurrentAppMonState = HS_STATE_DISABLED;
+            CFE_EVS_SendEvent(HS_DISABLE_APPMON_ERR_EID, CFE_EVS_EventType_ERROR,
+                              "Application Monitoring Disabled due to Table Load Failure");
+            HS_AppData.AppMonLoaded = HS_STATE_DISABLED;
+        }
+
+        /* Load the HS Events Monitor Table */
+        Status = CFE_TBL_Load(HS_AppData.EMTableHandle, CFE_TBL_SRC_FILE, (const void *)HS_EMT_FILENAME);
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_EMT_LD_ERR_EID, CFE_EVS_EventType_ERROR, "Error Loading EventMon Table,RC=0x%08X",
+                              (unsigned int)Status);
+            HS_AppData.CurrentEventMonState = HS_STATE_DISABLED;
+            CFE_EVS_SendEvent(HS_DISABLE_EVENTMON_ERR_EID, CFE_EVS_EventType_ERROR,
+                              "Event Monitoring Disabled due to Table Load Failure");
+            HS_AppData.EventMonLoaded = HS_STATE_DISABLED;
+        }
+
+        /* Load the HS Message Actions Table */
+        Status = CFE_TBL_Load(HS_AppData.MATableHandle, CFE_TBL_SRC_FILE, (const void *)HS_MAT_FILENAME);
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_MAT_LD_ERR_EID, CFE_EVS_EventType_ERROR, "Error Loading MsgActs Table,RC=0x%08X",
+                              (unsigned int)Status);
+            HS_AppData.MsgActsState = HS_STATE_DISABLED;
+        }
+
+        /*
+        ** Get pointers to table data
+        */
+        HS_AcquirePointers();
     }
 
-    /*
-    ** Get pointers to table data
-    */
-    HS_AcquirePointers();
-
-    return CFE_SUCCESS;
+    return Status;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
