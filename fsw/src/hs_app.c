@@ -230,108 +230,114 @@ CFE_Status_t HS_AppInit(void)
     if (Status != CFE_SUCCESS)
     {
         CFE_ES_WriteToSysLog("HS App: Error Registering For Event Services, RC = 0x%08X\n", (unsigned int)Status);
-        return Status;
     }
 
-    /*
-    ** Create Critical Data Store
-    */
-    Status = CFE_ES_RegisterCDS(&HS_AppData.MyCDSHandle, sizeof(HS_CDSData_t), HS_CDSNAME);
-
-    if (Status == CFE_ES_CDS_ALREADY_EXISTS)
+    if (Status == CFE_SUCCESS)
     {
         /*
-        ** Critical Data Store already existed, we need to get a
-        ** copy of its current contents to see if we can use it
+        ** Create Critical Data Store
         */
-        Status = CFE_ES_RestoreFromCDS(&HS_AppData.CDSData, HS_AppData.MyCDSHandle);
+        Status = CFE_ES_RegisterCDS(&HS_AppData.MyCDSHandle, sizeof(HS_CDSData_t), HS_CDSNAME);
 
-        if (Status == CFE_SUCCESS)
+        if (Status == CFE_ES_CDS_ALREADY_EXISTS)
         {
-            if ((HS_AppData.CDSData.ResetsPerformed != (uint16)~HS_AppData.CDSData.ResetsPerformedNot) ||
-                (HS_AppData.CDSData.MaxResets != (uint16)~HS_AppData.CDSData.MaxResetsNot))
+            /*
+            ** Critical Data Store already existed, we need to get a
+            ** copy of its current contents to see if we can use it
+            */
+            Status = CFE_ES_RestoreFromCDS(&HS_AppData.CDSData, HS_AppData.MyCDSHandle);
+
+            if (Status == CFE_SUCCESS)
+            {
+                if ((HS_AppData.CDSData.ResetsPerformed != (uint16)~HS_AppData.CDSData.ResetsPerformedNot) ||
+                    (HS_AppData.CDSData.MaxResets != (uint16)~HS_AppData.CDSData.MaxResetsNot))
+                {
+                    /*
+                    ** Report error restoring data
+                    */
+                    CFE_EVS_SendEvent(HS_CDS_CORRUPT_ERR_EID, CFE_EVS_EventType_ERROR,
+                                      "Data in CDS was corrupt, initializing resets data");
+                    /*
+                    ** If data was corrupt, initialize data
+                    */
+                    HS_SetCDSData(0, HS_MAX_RESTART_ACTIONS);
+                }
+            }
+            else
             {
                 /*
                 ** Report error restoring data
                 */
-                CFE_EVS_SendEvent(HS_CDS_CORRUPT_ERR_EID, CFE_EVS_EventType_ERROR,
-                                  "Data in CDS was corrupt, initializing resets data");
+                CFE_EVS_SendEvent(HS_CDS_RESTORE_ERR_EID, CFE_EVS_EventType_ERROR,
+                                  "Failed to restore data from CDS (Err=0x%08x), initializing resets data",
+                                  (unsigned int)Status);
                 /*
-                ** If data was corrupt, initialize data
+                ** If data could not be retrieved, initialize data
                 */
                 HS_SetCDSData(0, HS_MAX_RESTART_ACTIONS);
             }
+
+            Status = CFE_SUCCESS;
+        }
+        else if (Status == CFE_SUCCESS)
+        {
+            /*
+            ** If CDS did not previously exist, initialize data
+            */
+            HS_SetCDSData(0, HS_MAX_RESTART_ACTIONS);
         }
         else
         {
             /*
-            ** Report error restoring data
+            ** Disable saving to CDS
             */
-            CFE_EVS_SendEvent(HS_CDS_RESTORE_ERR_EID, CFE_EVS_EventType_ERROR,
-                              "Failed to restore data from CDS (Err=0x%08x), initializing resets data",
-                              (unsigned int)Status);
+            HS_AppData.CDSState = HS_STATE_DISABLED;
+
             /*
-            ** If data could not be retrieved, initialize data
+            ** Initialize values anyway (they will not be saved)
             */
             HS_SetCDSData(0, HS_MAX_RESTART_ACTIONS);
+
+            Status = CFE_SUCCESS; /* Set Status to CFE_SUCCESS in order to continue with initialization */
         }
-
-        Status = CFE_SUCCESS;
     }
-    else if (Status == CFE_SUCCESS)
+
+    if (Status == CFE_SUCCESS)
     {
         /*
-        ** If CDS did not previously exist, initialize data
+        ** Set up the HS Software Bus
         */
-        HS_SetCDSData(0, HS_MAX_RESTART_ACTIONS);
+        Status = HS_SbInit();
     }
-    else
+
+    if (Status == CFE_SUCCESS)
     {
         /*
-        ** Disable saving to CDS
+        ** Register The HS Tables
         */
-        HS_AppData.CDSState = HS_STATE_DISABLED;
+        Status = HS_TblInit();
+    }
 
+    if (Status == CFE_SUCCESS)
+    {
         /*
-        ** Initialize values anyway (they will not be saved)
+        ** Perform initialization for system monitoring
         */
-        HS_SetCDSData(0, HS_MAX_RESTART_ACTIONS);
+        Status = HS_SysMonInit();
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_SYSMON_INIT_ERR_EID, CFE_EVS_EventType_ERROR,
+                              "Error in system monitor initialization, RC=0x%08X", Status);
+        }
+        else
+        {
+            /*
+             ** Application initialization event
+             */
+            CFE_EVS_SendEvent(HS_INIT_EID, CFE_EVS_EventType_INFORMATION, "HS Initialized.  Version %d.%d.%d.%d",
+                              HS_MAJOR_VERSION, HS_MINOR_VERSION, HS_REVISION, HS_MISSION_REV);
+        }
     }
-
-    /*
-    ** Set up the HS Software Bus
-    */
-    Status = HS_SbInit();
-    if (Status != CFE_SUCCESS)
-    {
-        return Status;
-    }
-
-    /*
-    ** Register The HS Tables
-    */
-    Status = HS_TblInit();
-    if (Status != CFE_SUCCESS)
-    {
-        return Status;
-    }
-
-    /*
-    ** Perform initialization for system monitoring
-    */
-    Status = HS_SysMonInit();
-    if (Status != CFE_SUCCESS)
-    {
-        CFE_EVS_SendEvent(HS_SYSMON_INIT_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "Error in system monitor initialization, RC=0x%08X", Status);
-        return Status;
-    }
-
-    /*
-    ** Application initialization event
-    */
-    CFE_EVS_SendEvent(HS_INIT_EID, CFE_EVS_EventType_INFORMATION, "HS Initialized.  Version %d.%d.%d.%d",
-                      HS_MAJOR_VERSION, HS_MINOR_VERSION, HS_REVISION, HS_MISSION_REV);
 
     return Status;
 }
