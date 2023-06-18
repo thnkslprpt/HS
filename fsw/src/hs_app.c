@@ -361,54 +361,62 @@ CFE_Status_t HS_SbInit(void)
     {
         CFE_EVS_SendEvent(HS_CR_CMD_PIPE_ERR_EID, CFE_EVS_EventType_ERROR, "Error Creating SB Command Pipe,RC=0x%08X",
                           (unsigned int)Status);
-        return Status;
     }
 
-    /* Create Event Pipe */
-    Status = CFE_SB_CreatePipe(&HS_AppData.EventPipe, HS_EVENT_PIPE_DEPTH, HS_EVENT_PIPE_NAME);
-    if (Status != CFE_SUCCESS)
+    if (Status == CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(HS_CR_EVENT_PIPE_ERR_EID, CFE_EVS_EventType_ERROR, "Error Creating SB Event Pipe,RC=0x%08X",
-                          (unsigned int)Status);
-        return Status;
+        /* Create Event Pipe */
+        Status = CFE_SB_CreatePipe(&HS_AppData.EventPipe, HS_EVENT_PIPE_DEPTH, HS_EVENT_PIPE_NAME);
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_CR_EVENT_PIPE_ERR_EID, CFE_EVS_EventType_ERROR,
+                              "Error Creating SB Event Pipe,RC=0x%08X", (unsigned int)Status);
+        }
     }
 
-    /* Create Wakeup Pipe */
-    Status = CFE_SB_CreatePipe(&HS_AppData.WakeupPipe, HS_WAKEUP_PIPE_DEPTH, HS_WAKEUP_PIPE_NAME);
-    if (Status != CFE_SUCCESS)
+    if (Status == CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(HS_CR_WAKEUP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR, "Error Creating SB Wakeup Pipe,RC=0x%08X",
-                          (unsigned int)Status);
-        return Status;
+        /* Create Wakeup Pipe */
+        Status = CFE_SB_CreatePipe(&HS_AppData.WakeupPipe, HS_WAKEUP_PIPE_DEPTH, HS_WAKEUP_PIPE_NAME);
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_CR_WAKEUP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR,
+                              "Error Creating SB Wakeup Pipe,RC=0x%08X", (unsigned int)Status);
+        }
     }
 
-    /* Subscribe to Housekeeping Request */
-    Status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(HS_SEND_HK_MID), HS_AppData.CmdPipe);
-    if (Status != CFE_SUCCESS)
+    if (Status == CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(HS_SUB_REQ_ERR_EID, CFE_EVS_EventType_ERROR, "Error Subscribing to HK Request,RC=0x%08X",
-                          (unsigned int)Status);
-        return Status;
+        /* Subscribe to Housekeeping Request */
+        Status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(HS_SEND_HK_MID), HS_AppData.CmdPipe);
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_SUB_REQ_ERR_EID, CFE_EVS_EventType_ERROR, "Error Subscribing to HK Request,RC=0x%08X",
+                              (unsigned int)Status);
+        }
     }
 
-    /* Subscribe to HS ground commands */
-    Status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(HS_CMD_MID), HS_AppData.CmdPipe);
-    if (Status != CFE_SUCCESS)
+    if (Status == CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(HS_SUB_CMD_ERR_EID, CFE_EVS_EventType_ERROR, "Error Subscribing to Gnd Cmds,RC=0x%08X",
-                          (unsigned int)Status);
-        return Status;
+        /* Subscribe to HS ground commands */
+        Status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(HS_CMD_MID), HS_AppData.CmdPipe);
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_SUB_CMD_ERR_EID, CFE_EVS_EventType_ERROR, "Error Subscribing to Gnd Cmds,RC=0x%08X",
+                              (unsigned int)Status);
+        }
     }
 
-    /* Subscribe to HS Wakeup Message */
-    Status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(HS_WAKEUP_MID), HS_AppData.WakeupPipe);
-    if (Status != CFE_SUCCESS)
+    if (Status == CFE_SUCCESS)
     {
-        CFE_EVS_SendEvent(HS_SUB_WAKEUP_ERR_EID, CFE_EVS_EventType_ERROR, "Error Subscribing to Wakeup,RC=0x%08X",
-                          (unsigned int)Status);
-        return Status;
+        /* Subscribe to HS Wakeup Message */
+        Status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(HS_WAKEUP_MID), HS_AppData.WakeupPipe);
+        if (Status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(HS_SUB_WAKEUP_ERR_EID, CFE_EVS_EventType_ERROR, "Error Subscribing to Wakeup,RC=0x%08X",
+                              (unsigned int)Status);
+        }
     }
-
     /*
     ** Event message subscription delayed until after startup synch
     */
