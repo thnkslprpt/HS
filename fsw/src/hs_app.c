@@ -540,7 +540,9 @@ CFE_Status_t HS_TblInit(void)
         /*
         ** Get pointers to table data
         */
-        HS_AcquirePointers();
+        HS_AcquirePointers(); /* Return CFE_SUCCESS even if failed to load 1 or more tables */
+
+        Status = CFE_SUCCESS;
     }
 
     return Status;
